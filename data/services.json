@@ -1,0 +1,56 @@
+[
+  {
+    "id": "api",
+    "name": "API Gateway",
+    "status": "operational",
+    "uptime": 99.98,
+    "responseTimeMs": 142,
+    "description": "Handles public API traffic and routes requests to backend services.",
+    "lastIncident": "2026-07-18T14:22:00Z"
+  },
+  {
+    "id": "database",
+    "name": "Primary Database",
+    "status": "operational",
+    "uptime": 99.99,
+    "responseTimeMs": 38,
+    "description": "Primary transactional database cluster.",
+    "lastIncident": "2026-06-29T09:14:00Z"
+  },
+  {
+    "id": "auth",
+    "name": "Authentication",
+    "status": "degraded",
+    "uptime": 99.91,
+    "responseTimeMs": 487,
+    "description": "Handles user authentication, sessions, and token issuance.",
+    "lastIncident": "2026-08-14T11:43:00Z"
+  },
+  {
+    "id": "messaging",
+    "name": "Messaging",
+    "status": "operational",
+    "uptime": 99.97,
+    "responseTimeMs": 96,
+    "description": "Processes asynchronous notifications and application messages.",
+    "lastIncident": "2026-07-31T18:07:00Z"
+  },
+  {
+    "id": "storage",
+    "name": "File Storage",
+    "status": "operational",
+    "uptime": 99.95,
+    "responseTimeMs": 121,
+    "description": "Provides object storage for customer files and attachments.",
+    "lastIncident": "2026-07-11T03:52:00Z"
+  },
+  {
+    "id": "search",
+    "name": "Search",
+    "status": "operational",
+    "uptime": 99.94,
+    "responseTimeMs": 174,
+    "description": "Indexes and searches customer and application data.",
+    "lastIncident": "2026-07-25T21:19:00Z"
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ALT-1042",
+    "severity": "critical",
+    "service": "auth",
+    "title": "Elevated authentication failures",
+    "message": "Authentication requests are experiencing elevated failure rates in the US-East region.",
+    "timestamp": "2026-08-14T11:43:00Z",
+    "status": "open"
+  },
+  {
+    "id": "ALT-1041",
+    "severity": "warning",
+    "service": "auth",
+    "title": "Authentication latency increased",
+    "message": "Average authentication response time has exceeded the normal operating threshold for the last 15 minutes.",
+    "timestamp": "2026-08-14T11:28:00Z",
+    "status": "open"
+  },
+  {
+    "id": "ALT-1040",
+    "severity": "warning",
+    "service": "api",
+    "title": "API traffic above normal",
+    "message": "Request volume is approximately 32% above the expected level for this time of day.",
+    "timestamp": "2026-08-14T10:55:00Z",
+    "status": "acknowledged"
+  },
+  {
+    "id": "ALT-1039",
+    "severity": "info",
+    "service": "database",
+    "title": "Database maintenance completed",
+    "message": "Scheduled database maintenance completed successfully with no customer-visible interruption.",
+    "timestamp": "2026-08-14T09:30:00Z",
+    "status": "resolved"
+  },
+  {
+    "id": "ALT-1038",
+    "severity": "warning",
+    "service": "storage",
+    "title": "Storage latency elevated",
+    "message": "File upload latency is slightly above the normal threshold in two regions.",
+    "timestamp": "2026-08-13T22:17:00Z",
+    "status": "resolved"
+  },
+  {
+    "id": "ALT-1037",
+    "severity": "info",
+    "service": "messaging",
+    "title": "Messaging queue normalized",
+    "message": "The notification queue has returned to normal processing levels.",
+    "timestamp": "2026-08-13T18:42:00Z",
+    "status": "resolved"
+  },
+  {
+    "id": "ALT-1036",
+    "severity": "critical",
+    "service": "api",
+    "title": "API gateway incident resolved",
+    "message": "A transient routing issue caused elevated 5xx responses. Traffic has been fully restored.",
+    "timestamp": "2026-08-12T16:05:00Z",
+    "status": "resolved"
+  }
+]

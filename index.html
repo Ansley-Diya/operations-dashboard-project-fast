@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operations Dashboard — Vonage</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <app-shell>
+    <div slot="content" class="dashboard-grid">
+      <metric-card></metric-card>
+      <metric-card></metric-card>
+      <metric-card></metric-card>
+      <service-status></service-status>
+      <alert-list></alert-list>
+      <activity-table></activity-table>
+    </div>
+  </app-shell>
+  <app-modal></app-modal>
+
+  <toast-container></toast-container>
+
+  <script type="module" src="components/metric-card.js"></script>
+  <script type="module" src="components/app-shell.js"></script>
+  <script type="module" src="components/service-status.js"></script>
+  <script type="module" src="components/app-modal.js"></script>
+  <script type="module" src="components/toast-container.js"></script>
+  <script type="module" src="components/toast-message.js"></script>
+  <script type="module" src="components/alert-item.js"></script>
+  <script type="module" src="components/alert-list.js"></script>
+  <script type="module" src="components/activity-table.js"></script>
+  <script type="module" src="main.js"></script>
+
+</body>
+</html>
