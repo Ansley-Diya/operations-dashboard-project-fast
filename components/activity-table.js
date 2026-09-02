@@ -116,7 +116,7 @@ activityTemplate.innerHTML = `
       border: 1px solid rgba(34, 197, 94, 0.2);
     }
 
-    .status-badge.failure {
+    .status-badge.failed {
       background: rgba(239, 68, 68, 0.12);
       color: #dc2626;
       border: 1px solid rgba(239, 68, 68, 0.2);
@@ -245,23 +245,26 @@ activityTemplate.innerHTML = `
 
 class ActivityTable extends HTMLElement {
 
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(activityTemplate.content.cloneNode(true));
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(activityTemplate.content.cloneNode(true));
+  }
 
+  connectedCallback() {
     this._searchTerm    = '';
     this._sortColumn    = null;
     this._sortDirection = 'asc';
     this._currentPage   = 1;
     this._pageSize      = 5;
 
-    shadow.querySelector('.search-input').addEventListener('input', (e) => {
+    this.shadowRoot.querySelector('.search-input').addEventListener('input', (e) => {
       this._searchTerm  = e.target.value.toLowerCase();
       this._currentPage = 1;
       this._render();
     });
 
-    shadow.querySelector('thead').addEventListener('click', (e) => {
+    this.shadowRoot.querySelector('thead').addEventListener('click', (e) => {
       const th = e.target.closest('th');
       if (!th) return;
 
@@ -278,20 +281,22 @@ class ActivityTable extends HTMLElement {
       this._render();
     });
 
-    shadow.querySelector('.prev-btn').addEventListener('click', () => {
+    this.shadowRoot.querySelector('.prev-btn').addEventListener('click', () => {
       if (this._currentPage > 1) {
         this._currentPage--;
         this._render();
       }
     });
 
-    shadow.querySelector('.next-btn').addEventListener('click', () => {
+    this.shadowRoot.querySelector('.next-btn').addEventListener('click', () => {
       const totalPages = Math.ceil(this._filteredCount / this._pageSize);
       if (this._currentPage < totalPages) {
         this._currentPage++;
         this._render();
       }
     });
+
+    this._render();
   }
 
   set activities(data) {
@@ -350,31 +355,59 @@ class ActivityTable extends HTMLElement {
 
     if (pageItems.length === 0) {
       const empty = document.createElement('tr');
-      empty.innerHTML = `<td colspan="5" class="empty-state">No results found</td>`;
+      const emptyCell = document.createElement('td');
+      emptyCell.setAttribute('colspan', '5');
+      emptyCell.className = 'empty-state';
+      emptyCell.textContent = 'No results found';
+      empty.appendChild(emptyCell);
       tbody.appendChild(empty);
     } else {
       pageItems.forEach(item => {
         const row      = document.createElement('tr');
-        const date     = new Date(item.timestamp).toLocaleDateString();
+        const dateObj  = new Date(item.timestamp || '');
+        const date     = Number.isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
         const initials = item.user
-          .split('.')
+          .split(' ')
+          .filter(Boolean)
           .map(p => p[0].toUpperCase())
           .join('');
 
-        row.innerHTML = `
-          <td>
-            <div class="user-chip">
-              <div class="user-avatar" aria-hidden="true">${initials}</div>
-              ${item.user}
-            </div>
-          </td>
-          <td>${item.action}</td>
-          <td>${item.resource}</td>
-          <td>
-            <span class="status-badge ${item.status}">${item.status}</span>
-          </td>
-          <td>${date}</td>
-        `;
+        // User cell
+        const userCell = document.createElement('td');
+        const userChip = document.createElement('div');
+        userChip.className = 'user-chip';
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.textContent = initials;
+        userChip.appendChild(avatar);
+        userChip.appendChild(document.createTextNode(item.user));
+        userCell.appendChild(userChip);
+
+        // Action cell
+        const actionCell = document.createElement('td');
+        actionCell.textContent = item.action;
+
+        // Resource cell
+        const resourceCell = document.createElement('td');
+        resourceCell.textContent = item.resource;
+
+        // Status cell
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status-badge ${item.status}`;
+        statusBadge.textContent = item.status;
+        statusCell.appendChild(statusBadge);
+
+        // Date cell
+        const dateCell = document.createElement('td');
+        dateCell.textContent = date;
+
+        row.appendChild(userCell);
+        row.appendChild(actionCell);
+        row.appendChild(resourceCell);
+        row.appendChild(statusCell);
+        row.appendChild(dateCell);
 
         tbody.appendChild(row);
       });

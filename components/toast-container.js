@@ -22,10 +22,13 @@ template.innerHTML = `
 
 class ToastContainer extends HTMLElement {
 
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(template.content.cloneNode(true));
+  }
 
+  connectedCallback() {
     this._onToast = (event) => {
       this._showToast(event.detail.message, event.detail.type);
     };

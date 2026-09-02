@@ -75,9 +75,9 @@ The outer container for the entire dashboard. Provides a sticky gradient header,
 ### `<metric-card>`
 Displays a single metric — a label and a value. Used three times on the page with different data each time. Data arrives via HTML attributes. The component reacts live to attribute changes after it is already on the page.
 
-**Attributes:** `title`, `value`
+**Attributes:** `heading`, `value`
 
-**Demonstrates:** Shadow DOM, template, `observedAttributes`, `attributeChangedCallback`, `connectedCallback`, `disconnectedCallback`, `_render()` pattern
+**Demonstrates:** Shadow DOM, template, `observedAttributes`, `attributeChangedCallback`, `connectedCallback`, `_render()` pattern
 
 ---
 
@@ -99,7 +99,7 @@ Displays a list of backend services with coloured status indicators — green fo
 
 **Property:** `alerts` (Array) on `<alert-list>`
 
-**Attributes on `<alert-item>`:** `severity`, `title`, `service`, `timestamp`, `status`
+**Attributes on `<alert-item>`:** `severity`, `heading`, `service`, `timestamp`, `status`, `message`
 
 **Fires:** `alert-selected` — `{ detail: alertObject, bubbles: true, composed: true }`
 
@@ -163,7 +163,7 @@ window.dispatchEvent(new CustomEvent('show-toast', {
 | Named slots | `<app-shell>`, `<app-modal>` |
 | `::slotted()` | `<toast-container>` |
 | `connectedCallback` | All components |
-| `disconnectedCallback` | `<metric-card>`, `<app-modal>`, `<toast-message>`, `<toast-container>` |
+| `disconnectedCallback` | `<app-modal>`, `<toast-message>`, `<toast-container>` |
 | `observedAttributes` | `<metric-card>`, `<alert-item>`, `<toast-message>` |
 | `attributeChangedCallback` | `<metric-card>`, `<alert-item>`, `<toast-message>` |
 | Properties | `<service-status>`, `<alert-list>`, `<activity-table>` |

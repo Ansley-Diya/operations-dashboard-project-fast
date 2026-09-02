@@ -63,7 +63,6 @@ body {
 .dashboard-grid service-status           { grid-area: services; }
 .dashboard-grid alert-list               { grid-area: alerts; }
 .dashboard-grid activity-table           { grid-area: table; }
-.dashboard-grid app-modal                { display: none; }
 
 @media (max-width: 900px) {
   .dashboard-grid {

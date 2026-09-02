@@ -52,9 +52,13 @@ template.innerHTML = `
 
 class ToastMessage extends HTMLElement {
 
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(template.content.cloneNode(true));
+  }
+
   connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
     this._render();
 
     this._timer = setTimeout(() => {

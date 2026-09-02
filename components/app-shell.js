@@ -136,18 +136,33 @@ template.innerHTML = `
 `;
 
 class AppShell extends HTMLElement {
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(template.content.cloneNode(true));
+  }
 
-    const toggle = shadow.querySelector('.theme-toggle');
+  connectedCallback() {
+    const toggle = this.shadowRoot.querySelector('.theme-toggle');
+
+    // Initialize from localStorage or system preference
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = stored ? stored === 'dark' : prefersDark;
+
+    if (isDark) {
+      document.body.classList.add('dark');
+      toggle.textContent = 'Light Mode';
+      toggle.setAttribute('aria-label', 'Switch to light mode');
+    }
 
     toggle.addEventListener('click', () => {
-      const isDark = document.body.classList.toggle('dark');
-      toggle.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+      const nowDark = document.body.classList.toggle('dark');
+      toggle.textContent = nowDark ? 'Light Mode' : 'Dark Mode';
       toggle.setAttribute('aria-label',
-        isDark ? 'Switch to light mode' : 'Switch to dark mode'
+        nowDark ? 'Switch to light mode' : 'Switch to dark mode'
       );
+      localStorage.setItem('theme', nowDark ? 'dark' : 'light');
     });
   }
 }

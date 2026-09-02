@@ -98,11 +98,14 @@ template.innerHTML = `
 
 class AppModal extends HTMLElement {
 
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(template.content.cloneNode(true));
+  }
 
-    shadow.querySelector('.close-button').addEventListener('click', () => {
+  connectedCallback() {
+    this.shadowRoot.querySelector('.close-button').addEventListener('click', () => {
       this.close();
     });
 
@@ -122,6 +125,7 @@ class AppModal extends HTMLElement {
   }
 
   close() {
+    if (!this.hasAttribute('open')) return;
     this.removeAttribute('open');
     this.dispatchEvent(new CustomEvent('modal-closed', {
       bubbles:  true,

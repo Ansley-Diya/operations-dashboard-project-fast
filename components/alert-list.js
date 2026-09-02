@@ -98,15 +98,18 @@ template.innerHTML = `
 
 class AlertList extends HTMLElement {
 
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.appendChild(template.content.cloneNode(true));
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' })
+        .appendChild(template.content.cloneNode(true));
+  }
 
+  connectedCallback() {
     this._currentFilter = 'all';
 
-    shadow.querySelectorAll('.filter-btn').forEach(btn => {
+    this.shadowRoot.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        shadow.querySelectorAll('.filter-btn').forEach(b => {
+        this.shadowRoot.querySelectorAll('.filter-btn').forEach(b => {
           b.classList.remove('active');
           b.setAttribute('aria-pressed', 'false');
         });
@@ -141,10 +144,11 @@ class AlertList extends HTMLElement {
     filtered.forEach(alert => {
       const item = document.createElement('alert-item');
       item.setAttribute('severity',  alert.severity);
-      item.setAttribute('title',     alert.title);
+      item.setAttribute('heading',   alert.title);
       item.setAttribute('service',   alert.service);
       item.setAttribute('timestamp', alert.timestamp);
       item.setAttribute('status',    alert.status);
+      item.setAttribute('message',   alert.message || '');
       list.appendChild(item);
     });
   }
