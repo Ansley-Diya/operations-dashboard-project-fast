@@ -55,7 +55,10 @@ const serviceStatusStyles = css`
 `;
 
 class ServiceStatus extends FASTElement {
-  services = [];
+  constructor() {
+    super();
+    this.services = [];
+  }
 
   get operationalCount() {
     return this.services.filter(service => service.status === 'operational').length;

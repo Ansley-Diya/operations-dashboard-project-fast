@@ -1,8 +1,8 @@
 import {
   FASTElement,
-  attr,
   css,
   html,
+  observable,
 } from 'https://cdn.jsdelivr.net/npm/@microsoft/fast-element@3.0.2/+esm';
 
 const formatDate = timestamp => {
@@ -15,16 +15,16 @@ const alertItemTemplate = html`
     class="alert-item"
     role="listitem"
     tabindex="0"
-    aria-label="${x => `${x.severity || 'info'} alert: ${x.heading}`}"
+    aria-label="${x => `${x.alert.severity || 'info'} alert: ${x.alert.title}`}"
     @click="${x => x.selectAlert()}"
     @keydown="${(x, context) => x.handleKeydown(context.event)}"
   >
-    <span class="severity-badge ${x => x.severity || 'info'}">${x => x.severity || 'info'}</span>
+    <span class="severity-badge ${x => x.alert.severity || 'info'}">${x => x.alert.severity || 'info'}</span>
     <div class="alert-body">
-      <div class="alert-title">${x => x.heading}</div>
+      <div class="alert-title">${x => x.alert.title}</div>
       <div class="alert-meta">
-        ${x => x.service} - ${x => formatDate(x.timestamp)}
-        <span class="status-tag">${x => x.status}</span>
+        ${x => x.alert.service} - ${x => formatDate(x.alert.timestamp)}
+        <span class="status-tag">${x => x.alert.status}</span>
       </div>
     </div>
   </div>
@@ -45,23 +45,14 @@ const alertItemStyles = css`
 `;
 
 class AlertItem extends FASTElement {
-  severity = '';
-  heading = '';
-  service = '';
-  timestamp = '';
-  status = '';
-  message = '';
+  constructor() {
+    super();
+    this.alert = {};
+  }
 
   selectAlert() {
     this.dispatchEvent(new CustomEvent('alert-selected', {
-      detail: {
-        severity: this.severity,
-        title: this.heading,
-        service: this.service,
-        timestamp: this.timestamp,
-        status: this.status,
-        message: this.message,
-      },
+      detail: this.alert,
       bubbles: true,
       composed: true,
     }));
@@ -75,9 +66,7 @@ class AlertItem extends FASTElement {
   }
 }
 
-for (const property of ['severity', 'heading', 'service', 'timestamp', 'status', 'message']) {
-  attr(AlertItem.prototype, property);
-}
+observable(AlertItem.prototype, 'alert');
 
 AlertItem.define({
   name: 'alert-item',

@@ -65,8 +65,11 @@ const metricCardStyles = css`
 `;
 
 class MetricCard extends FASTElement {
-  heading = '';
-  value = '';
+  constructor() {
+    super();
+    this.heading = '';
+    this.value = '';
+  }
 }
 
 attr(MetricCard.prototype, 'heading');
