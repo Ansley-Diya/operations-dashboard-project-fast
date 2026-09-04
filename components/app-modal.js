@@ -1,137 +1,94 @@
-const template = document.createElement('template');
-template.innerHTML = `
-  <style>
-    :host {
-      display: none;
-    }
+import { FASTElement, observable, html, css } from "@microsoft/fast-element";
 
-    :host([open]) {
-      display: flex;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    .modal {
-      background: var(--color-surface);
-      border-radius: 20px;
-      min-width: 420px;
-      max-width: 560px;
-      width: 90%;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--color-border);
-      animation: slideUp 0.3s ease;
-      overflow: hidden;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d1b69 100%);
-      color: white;
-    }
-
-    .modal-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: white;
-    }
-
-    .close-button {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 14px;
-      cursor: pointer;
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      font-weight: 700;
-    }
-
-    .close-button:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .modal-body {
-      padding: 24px;
-      color: var(--color-text);
-      line-height: 1.7;
-    }
-  </style>
-
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-heading">
-        <slot name="title">Details</slot>
+const template = html`
+  <div class="header" role="banner">
+    <div class="header-left">
+      <div class="header-logo" aria-hidden="true">D</div>
+      <div>
+        <div class="header-title">Operations Dashboard</div>
+        <div class="header-subtitle">Platform Monitor</div>
       </div>
-      <button class="close-button" aria-label="Close modal">x</button>
     </div>
-    <div class="modal-body">
-      <slot name="content"></slot>
+    <div class="header-right">
+      <div class="status-pill" role="status" aria-live="polite">
+        <div class="status-dot-live" aria-hidden="true"></div>
+        Live
+      </div>
+      <button
+        class="theme-toggle"
+        @click="${x => x.toggleTheme()}"
+        aria-label="${x => x.isDark ? 'Switch to light mode' : 'Switch to dark mode'}"
+      >
+        ${x => x.isDark ? "Light Mode" : "Dark Mode"}
+      </button>
     </div>
+  </div>
+  <div class="main" role="main">
+    <slot name="content"></slot>
   </div>
 `;
 
-class AppModal extends HTMLElement {
-
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' })
-        .appendChild(template.content.cloneNode(true));
+const styles = css`
+  :host { display: block; }
+  .header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d1b69 60%, #1a1a1a 100%);
+    color: white;
+    padding: 0 32px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 24px rgba(124, 58, 237, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
-
-  connectedCallback() {
-    this.shadowRoot.querySelector('.close-button').addEventListener('click', () => {
-      this.close();
-    });
-
-    this._onKeyDown = (e) => {
-      if (e.key === 'Escape') this.close();
-    };
-
-    document.addEventListener('keydown', this._onKeyDown);
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; color: white;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+    letter-spacing: -0.5px;
   }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeyDown);
+  .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; color: white; }
+  .header-subtitle { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500;
   }
-
-  openModal() {
-    this.setAttribute('open', '');
+  .status-dot-live {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #22c55e; box-shadow: 0 0 6px #22c55e;
+    animation: pulse 2s infinite;
   }
-
-  close() {
-    if (!this.hasAttribute('open')) return;
-    this.removeAttribute('open');
-    this.dispatchEvent(new CustomEvent('modal-closed', {
-      bubbles:  true,
-      composed: true
-    }));
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .theme-toggle {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: white; padding: 7px 16px; border-radius: 20px;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    transition: all 0.2s ease; letter-spacing: 0.3px;
   }
-}
+  .theme-toggle:hover { background: rgba(124,58,237,0.4); border-color: rgba(124,58,237,0.6); }
+  .main { padding: 16px; }
+`;
 
-customElements.define('app-modal', AppModal);
+class AppShell extends FASTElement {}
+
+observable(AppShell.prototype, "isDark");
+
+AppShell.prototype.toggleTheme = function() {
+  this.isDark = !this.isDark;
+  document.body.classList.toggle("dark", this.isDark);
+};
+
+AppShell.define({
+  name: "app-shell",
+  template,
+  styles,
+});

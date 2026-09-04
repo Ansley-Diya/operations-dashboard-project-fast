@@ -1,23 +1,20 @@
-import {
-  FASTElement,
-  attr,
-  css,
-  html,
-} from 'https://cdn.jsdelivr.net/npm/@microsoft/fast-element@3.0.2/+esm';
+import { FASTElement, attr, html, css } from "@microsoft/fast-element";
 
-const metricCardTemplate = html`
-  <div class="card" role="region" aria-label="${x => `${x.heading || ''}: ${x.value || '-'}`} ">
-    <div class="card-label">${x => x.heading}</div>
+const template = html`
+  <div
+    class="metric-card"
+    role="region"
+    aria-label="${x => `${x.title || ''}: ${x.value || '-'}`}"
+  >
+    <div class="card-label">${x => x.title}</div>
     <div class="card-value">${x => x.value || '-'}</div>
   </div>
 `;
 
-const metricCardStyles = css`
-  :host {
-    display: block;
-  }
+const styles = css`
+  :host { display: block; }
 
-  .card {
+  .metric-card {
     background: var(--color-surface);
     border-radius: 16px;
     padding: 24px;
@@ -30,17 +27,15 @@ const metricCardStyles = css`
     cursor: default;
   }
 
-  .card:hover {
+  .metric-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 32px var(--color-shadow);
   }
 
-  .card::before {
+  .metric-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 3px;
     background: linear-gradient(90deg, #7c3aed, #4f46e5);
     border-radius: 16px 16px 0 0;
@@ -64,19 +59,13 @@ const metricCardStyles = css`
   }
 `;
 
-class MetricCard extends FASTElement {
-  constructor() {
-    super();
-    this.heading = '';
-    this.value = '';
-  }
-}
+class MetricCard extends FASTElement {}
 
-attr(MetricCard.prototype, 'heading');
-attr(MetricCard.prototype, 'value');
+attr(MetricCard.prototype, "title");
+attr(MetricCard.prototype, "value");
 
 MetricCard.define({
-  name: 'metric-card',
-  template: metricCardTemplate,
-  styles: metricCardStyles,
+  name: "metric-card",
+  template,
+  styles,
 });
