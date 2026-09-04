@@ -1,5 +1,22 @@
 {
+  "name": "operations-dashboard-fast",
+  "version": "1.0.0",
+  "description": "Operations Dashboard — FAST Framework implementation using @microsoft/fast-element. A parallel refactor of the vanilla Web Components SaaS Dashboard project.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve . --listen 3000",
+    "dev": "npx live-server --port=3000"
+  },
   "dependencies": {
-    "@microsoft/fast-element": "^3.0.2"
-  }
+    "@microsoft/fast-element": "^3.0.0"
+  },
+  "keywords": [
+    "fast",
+    "web-components",
+    "custom-elements",
+    "shadow-dom",
+    "microsoft"
+  ],
+  "author": "Ansley Diya",
+  "license": "MIT"
 }

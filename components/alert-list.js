@@ -66,12 +66,15 @@ const template = html`
            When filteredAlerts changes → repeat() surgically adds/removes/reorders DOM nodes
       -->
       ${repeat(x => x.filteredAlerts, html`
+        <!-- attr() lowercases property names for their HTML attribute — "serviceName" becomes "servicename" -->
         <alert-item
           severity="${x => x.severity}"
-          title="${x => x.title}"
+          heading="${x => x.title}"
           service="${x => x.service}"
+          servicename="${x => x.serviceName}"
           timestamp="${x => x.timestamp}"
           status="${x => x.status}"
+          message="${x => x.message}"
         ></alert-item>
       `)}
 

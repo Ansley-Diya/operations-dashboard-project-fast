@@ -1,300 +1,410 @@
-# Operations Dashboard
+# Operations Dashboard — FAST Implementation
 
-A single-page Operations Dashboard built for a fictional SaaS company using vanilla HTML, CSS, and JavaScript Web Components — no frameworks, no libraries, no build tools.
-
----
-
-## Project Overview
-
-This dashboard gives an engineering team a real-time view of their platform's health. It displays service status, key metrics, recent alerts, and a log of user activity. The entire UI is built from reusable Web Components using only browser-native APIs.
-
-The goal was not just to build a dashboard — it was to understand how the browser actually works at the component level, without a framework abstracting that away.
-
----
-
-## Live Demo
-
-Open `index.html` with Live Server in VS Code.
-
-```
-http://127.0.0.1:5500/index.html
-```
-
-> Note: `type="module"` scripts require a proper HTTP server. Opening the file directly via `file://` will block module loading. Use Live Server or any local HTTP server.
-
----
-
-## Tech Stack
-
-| Technology | Usage |
-|---|---|
-| HTML5 | Structure and custom element tags |
-| CSS3 | Shadow DOM styles, CSS custom properties, CSS Grid, animations |
-| Vanilla JavaScript (ES2020) | Custom Elements API, Shadow DOM API, fetch(), async/await |
-| Web Components | All UI components — no React, Angular, Vue, or Lit |
+A parallel implementation of the Operations/SaaS Dashboard built using
+[@microsoft/fast-element](https://www.fast.design/), demonstrating how
+Microsoft's FAST framework maps directly onto native Web Component APIs.
 
 ---
 
 ## Project Structure
 
 ```
-ops-dashboard/
-│
-├── index.html                    — single HTML page, component tags, script imports
-├── styles.css                    — global tokens, CSS custom properties, responsive grid
-├── main.js                       — fetches data, coordinates all components
-│
+operations-dashboard-project-fast/
 ├── components/
-│   ├── app-shell.js              — outer layout, header, theme toggle
-│   ├── metric-card.js            — single metric display (title + value)
-│   ├── service-status.js         — service health list with status indicators
-│   ├── alert-list.js             — filterable alert collection
-│   ├── alert-item.js             — single alert row
-│   ├── activity-table.js         — sortable, searchable, paginated activity log
-│   ├── app-modal.js              — slot-based popup overlay
-│   ├── toast-container.js        — fixed notification area
-│   └── toast-message.js          — single auto-dismissing notification
-│
-└── data/
-    ├── services.json             — 6 backend services with status and metrics
-    ├── alerts.json               — 7 alerts with severity, service, and timestamp
-    └── activity.json             — 20 user activity records
+│   ├── metric-card.js       ← attr() · html · css · define()
+│   ├── app-shell.js         ← @click · observable · slots
+│   ├── service-status.js    ← observable · repeat()
+│   ├── alert-item.js        ← 7× attr · dynamic classes
+│   ├── alert-list.js        ← when() · computed getters · composition
+│   ├── activity-table.js    ← 5× observable · ?disabled · @input
+│   ├── app-modal.js         ← boolean attr · named slots · super lifecycle
+│   ├── toast-message.js     ← attr · setTimeout · connectedCallback
+│   └── toast-container.js   ← window events · FASTElement base
+├── data/
+│   ├── services.json        ← 6 backend services with status and metrics
+│   ├── alerts.json          ← 7 alerts with severity, service, and timestamp
+│   └── activity.json        ← 20 user activity records
+├── index.html               ← identical structure to vanilla version
+├── main.js                  ← nearly identical to vanilla version
+├── styles.css               ← identical to vanilla version
+├── package.json
+└── README.md
 ```
 
----
-
-## Components
-
-### `<app-shell>`
-The outer container for the entire dashboard. Provides a sticky gradient header, a live status indicator, and a light/dark theme toggle. All other components are placed inside its named content slot.
-
-**Demonstrates:** Shadow DOM, template, named slot, `:host`, sticky positioning, theme toggle
+> **Note on decorators:** FAST's docs usually show `@attr title;` class-field decorator
+> syntax. That requires a build step (Babel/TypeScript) to compile decorators down to
+> something the browser understands. This project has no build step — everything runs
+> as plain ES modules straight from the browser — so every component instead calls the
+> exact same underlying function directly: `attr(MetricCard.prototype, "title")`. Same
+> behavior, same FAST internals, zero tooling required.
 
 ---
 
-### `<metric-card>`
-Displays a single metric — a label and a value. Used three times on the page with different data each time. Data arrives via HTML attributes. The component reacts live to attribute changes after it is already on the page.
-
-**Attributes:** `heading`, `value`
-
-**Demonstrates:** Shadow DOM, template, `observedAttributes`, `attributeChangedCallback`, `connectedCallback`, `_render()` pattern
-
----
-
-### `<service-status>`
-Displays a list of backend services with coloured status indicators — green for operational, amber for degraded, red for down. Data is passed as an array via a JavaScript property setter. Clicking a row fires a custom event.
-
-**Property:** `services` (Array)
-
-**Fires:** `service-selected` — `{ detail: serviceObject, bubbles: true, composed: true }`
-
-**Demonstrates:** Property setter, `forEach`, custom event, `bubbles`, `composed`, keyboard accessibility
-
----
-
-### `<alert-list>` and `<alert-item>`
-`<alert-list>` holds all alerts and provides filter buttons for All, Critical, Warning, and Info. Uses `.filter()` to create a filtered copy of the data on each render. Shows an empty state when no alerts match.
-
-`<alert-item>` displays one alert row with a severity badge, title, service name, date, and status. Fires a custom event when clicked.
-
-**Property:** `alerts` (Array) on `<alert-list>`
-
-**Attributes on `<alert-item>`:** `severity`, `heading`, `service`, `timestamp`, `status`, `message`
-
-**Fires:** `alert-selected` — `{ detail: alertObject, bubbles: true, composed: true }`
-
-**Demonstrates:** Property setter, `.filter()`, `data-*` attributes, `classList`, `observedAttributes`, empty state, component composition
-
----
-
-### `<activity-table>`
-The most complex component. Displays user activity in a paginated table with live search and column sorting.
-
-- **Search** — filters rows on every keystroke using `.filter()` and `.includes()`
-- **Sorting** — `.sort()` with `.localeCompare()`, click same column to reverse direction
-- **Pagination** — `.slice()` cuts the array to the current page, resets to page 1 on search or sort change
-
-**Property:** `activities` (Array)
-
-**Demonstrates:** Property setter, `.filter()`, `.sort()`, `.localeCompare()`, `.slice()`, `Math.ceil()`, `data-*` attributes, event delegation, empty state
-
----
-
-### `<app-modal>`
-A popup overlay with two named slots — `title` and `content`. Hidden by default using `:host { display: none }`. Visible when the `open` attribute is set using `:host([open]) { display: flex }`. Closes on button click or Escape key. The Escape key listener is added to `document` in `connectedCallback` and removed in `disconnectedCallback` to prevent a memory leak.
-
-**Slots:** `title`, `content`
-
-**Methods:** `openModal()`, `close()`
-
-**Fires:** `modal-closed` — `{ bubbles: true, composed: true }`
-
-**Demonstrates:** Shadow DOM, named slots, `:host([open])`, `setAttribute`/`removeAttribute`, `disconnectedCallback` cleanup, `backdrop-filter`
-
----
-
-### `<toast-container>` and `<toast-message>`
-`<toast-container>` sits fixed in the bottom-right corner and listens on `window` for `show-toast` events. When one arrives it creates a `<toast-message>` and appends it as a child.
-
-`<toast-message>` slides in using a CSS `@keyframes` animation and auto-removes itself after 3 seconds. The timer is stored as `this._timer` and cleared in `disconnectedCallback`.
-
-**Triggering a toast from anywhere:**
-```js
-window.dispatchEvent(new CustomEvent('show-toast', {
-  detail: { message: 'Something happened', type: 'success' }
-}));
-```
-
-**Types:** `success`, `error`, `warning`, `info`
-
-**Demonstrates:** `window` event broadcasting, `::slotted()`, CSS animation, `setTimeout` cleanup in `disconnectedCallback`, `pointer-events`
-
----
-
-## Web Components Concepts Demonstrated
-
-| Concept | Where |
-|---|---|
-| Custom Elements API | All 9 components — `class extends HTMLElement`, `customElements.define()` |
-| Shadow DOM | All components — `attachShadow({ mode: 'open' })` |
-| `:host` | All components — controls outer element display |
-| `:host([attr])` | `<app-modal>` — CSS-driven open/close |
-| HTML Templates | All components — `document.createElement('template')`, `cloneNode(true)` |
-| Named slots | `<app-shell>`, `<app-modal>` |
-| `::slotted()` | `<toast-container>` |
-| `connectedCallback` | All components |
-| `disconnectedCallback` | `<app-modal>`, `<toast-message>`, `<toast-container>` |
-| `observedAttributes` | `<metric-card>`, `<alert-item>`, `<toast-message>` |
-| `attributeChangedCallback` | `<metric-card>`, `<alert-item>`, `<toast-message>` |
-| Properties | `<service-status>`, `<alert-list>`, `<activity-table>` |
-| Custom events | `<service-status>`, `<alert-item>`, `<app-modal>` |
-| `bubbles: true` | All custom events |
-| `composed: true` | All custom events — crosses Shadow DOM boundary |
-| CSS custom properties | All components — theming via `var(--color-*)` |
-| Light/dark theme | `styles.css` — `:root` and `body.dark` token overrides |
-| `fetch()` + `async/await` | `main.js` — `Promise.all` for parallel loading |
-| Error handling | `main.js` — `try/catch`, `.ok` check, error toast |
-| Responsive layout | `styles.css` — CSS Grid with media queries |
-| Accessibility | All interactive components — `aria-*`, `role`, `tabindex`, keyboard events |
-
----
-
-## Data Flow
-
-```
-services.json  ─┐
-alerts.json    ─┼──→  fetch() in main.js  ──→  parse with .json()
-activity.json  ─┘
-                         │
-         ┌───────────────┼──────────────────────┐
-         ▼               ▼                      ▼
-   metric-card     service-status          alert-list
-   setAttribute()   .services = []         .alerts = []
-                                               │
-                                        activity-table
-                                        .activities = []
-```
-
-`main.js` is the only file that knows about the JSON files. Components only know about the data they receive. This is loose coupling — components are independent and reusable.
-
----
-
-## Event Flow
-
-```
-User clicks a service row
-      ↓
-<service-status> fires 'service-selected'
-{ detail: serviceObject, bubbles: true, composed: true }
-      ↓
-main.js catches it on document
-      ↓
-main.js fills modal slots, calls modal.openModal()
-      ↓
-<app-modal> sets 'open' attribute → :host([open]) CSS activates
-
-User clicks an alert row
-      ↓
-<alert-item> fires 'alert-selected'
-{ detail: alertObject, bubbles: true, composed: true }
-      ↓
-main.js catches it on document
-      ↓
-same modal opens with alert content
-
-Any component calls showToast(message, type)
-      ↓
-window.dispatchEvent fires 'show-toast'
-      ↓
-<toast-container> hears it on window
-      ↓
-creates <toast-message>, appends it
-      ↓
-toast slides in, auto-removes after 3 seconds
-```
-
----
-
-## Theme System
-
-CSS custom properties are defined on `:root` for light mode and overridden on `body.dark` for dark mode.
-
-```css
-:root {
-  --color-background: #f1f0f7;
-  --color-surface:    #ffffff;
-  --color-text:       #1a1a1a;
-  --color-primary:    #7c3aed;
-}
-
-body.dark {
-  --color-background: #0a0a0f;
-  --color-surface:    #13131f;
-  --color-text:       #f1f0f7;
-  --color-primary:    #a855f7;
-}
-```
-
-CSS custom properties penetrate Shadow DOM walls — unlike regular CSS which is blocked at the boundary. Every `var(--color-surface)` inside every component's Shadow DOM automatically reads the new value when the theme switches. No JavaScript touches individual components. The CSS cascade does all the work.
-
-Toggling dark mode:
-```js
-document.body.classList.toggle('dark');
-```
-
----
-
-## Running the Project
-
-**Requirements:** VS Code with the Live Server extension (or any local HTTP server)
+## Setup
 
 ```bash
-# Clone or download the project
-# Open the ops-dashboard folder in VS Code
-# Right-click index.html → Open with Live Server
-# Dashboard opens at http://127.0.0.1:5500
+npm install
 ```
 
-No npm, no build step, no dependencies. It runs directly in any modern browser.
+Then open `index.html` with Live Server (VS Code) or any static file server.
 
 ---
 
-## Evaluation Coverage
+## What This Project Demonstrates
 
-| Area | Weight | How it is covered |
+### The Core Thesis
+
+FAST is a **thin productivity layer** over native Web Component APIs.
+It eliminates boilerplate. It does not replace the browser platform.
+
+Every FAST component in this project is a real Custom Element registered
+with `customElements.define()`. The browser still owns:
+
+- Custom Elements instantiation and lifecycle
+- Shadow DOM creation and management
+- Slot projection and composition
+- CSS cascade and custom property inheritance
+- Event dispatching and bubbling
+- `connectedCallback` / `disconnectedCallback`
+
+FAST owns:
+- Eliminating `observedAttributes` boilerplate → `attr()`
+- Eliminating `attributeChangedCallback` boilerplate → `attr()`
+- Eliminating manual getter/setter boilerplate → `attr()`
+- Eliminating `querySelector + textContent` → `${x => x.prop}` bindings
+- Eliminating `_render()` → reactive binding engine
+- Eliminating `createElement + appendChild` loops → `repeat()`
+- Eliminating conditional `innerHTML` → `when()`
+- Eliminating `<style>` attachment boilerplate → `css\`...\``
+- Eliminating scattered `customElements.define()` → `define()`
+
+---
+
+## Evaluation Criteria — How This Project Meets Each One
+
+### 1. Custom Elements / API Knowledge (20%)
+
+**What `FASTElement.define()` does under the hood:**
+
+```js
+MetricCard.define({
+  name: "metric-card",
+  template,
+  styles,
+});
+```
+
+Internally this does 4 things in order:
+1. Associates `template` with the `MetricCard` class
+2. Associates `styles` with the `MetricCard` class
+3. Processes all `attr()` / `observable()` declarations to build `observedAttributes`
+4. Calls `customElements.define("metric-card", MetricCard)` — the native browser call
+
+The browser still does the real registration. FAST prepares the class and then
+hands it to `customElements.define()` through the standard Web Component API.
+
+**Evidence in codebase:** Every component file ends with `ComponentName.define({...})`.
+Every `main.js` call (`setAttribute`, `element.services = data`) works identically
+on FAST components as on vanilla components — because they are still Custom Elements.
+
+---
+
+### 2. Shadow DOM / CSS Encapsulation (20%)
+
+FAST creates Shadow DOM automatically in `FASTElement`'s constructor:
+```js
+// Vanilla — you write this manually
+this.attachShadow({ mode: "open" });
+
+// FAST — FASTElement's constructor does this for you
+class MetricCard extends FASTElement {} // Shadow DOM auto-created
+```
+
+The Shadow DOM itself is unchanged. CSS encapsulation rules are identical.
+`:host` selectors work identically. CSS custom properties cross the Shadow DOM
+boundary by browser design — FAST does not change this.
+
+**Evidence in codebase:**
+- Every component uses `:host { display: block; }` — same as vanilla
+- `var(--color-surface)`, `var(--color-text)` etc. work inside every Shadow DOM
+- Dark mode toggle in `app-shell.js` sets `document.body.classList.toggle("dark")`
+  and every component's `var()` values update automatically — pure browser behaviour
+- `app-modal.js` uses `:host([open])` — CSS attribute selector on real DOM attribute,
+  unchanged from vanilla
+
+---
+
+### 3. Templates and Slots (15%)
+
+**How `html\`...\`` maps to a component template:**
+
+```js
+// Vanilla
+const template = document.createElement("template");
+template.innerHTML = `<div class="card-label"></div>`; // empty — filled by _render()
+// then in connectedCallback:
+shadow.appendChild(template.content.cloneNode(true));
+// then _render() runs querySelector + textContent
+
+// FAST
+const template = html`
+  <div class="card-label">${x => x.heading}</div>
+`; // live binding — FAST clones + connects at connectedCallback automatically
+```
+
+The `html` tagged template literal:
+1. Receives static HTML parts and dynamic `${x => ...}` expressions separately
+2. Builds a template object with DOM locations pre-mapped to expressions
+3. On first `connectedCallback`, FAST clones the template into Shadow DOM
+4. Each `${x => x.heading}` expression is called, value written, subscription registered
+5. When `heading` changes, only that one DOM node updates — no `_render()`, no querySelector
+
+**Slots — unchanged:**
+
+```html
+<!-- app-shell.js template — identical to vanilla -->
+<slot name="content"></slot>
+
+<!-- app-modal.js template — identical to vanilla -->
+<slot name="title">Details</slot>
+<slot name="content"></slot>
+```
+
+`main.js` uses `slot="content"` and `slot="title"` attributes identically to the
+vanilla version. The browser handles all projection. FAST is not involved.
+
+---
+
+### 4. Component Architecture / Composition (15%)
+
+The composition pattern is preserved exactly:
+
+```html
+<app-shell>
+  <div slot="content" class="dashboard-grid">
+    <metric-card></metric-card>
+    <metric-card></metric-card>
+    <metric-card></metric-card>
+    <service-status></service-status>
+    <alert-list></alert-list>
+    <activity-table></activity-table>
+  </div>
+</app-shell>
+<app-modal></app-modal>
+<toast-container></toast-container>
+```
+
+FAST changes how components are **defined**, not how they are **composed**.
+Parent/child relationships, slot-based composition, and Shadow DOM boundaries
+are all browser mechanics — FAST doesn't change any of them.
+
+**`alert-list` composes `alert-item` inside `repeat()`:**
+
+```js
+// alert-list.js — FAST component composing another FAST component
+${repeat(x => x.filteredAlerts, html`
+  <alert-item
+    severity="${x => x.severity}"
+    heading="${x => x.title}"
+  ></alert-item>
+`)}
+```
+
+FAST creates real `<alert-item>` DOM elements and sets real HTML attributes on them.
+`alert-item`'s own `attr()` system reacts. Two FAST components talking through
+attributes — identical to vanilla `createElement + setAttribute`.
+
+---
+
+### 5. Events and Component Communication (10%)
+
+`dispatchEvent` and `CustomEvent` are completely unchanged:
+
+```js
+// service-status.js — dispatches event (identical to vanilla)
+this.dispatchEvent(new CustomEvent("service-selected", {
+  detail:   { service },
+  bubbles:  true,
+  composed: true, // crosses Shadow DOM boundary
+}));
+
+// toast-container.js — window event listener (identical to vanilla)
+window.addEventListener("show-toast", this._onToast);
+
+// main.js — listens for events (identical to vanilla)
+document.addEventListener("service-selected", (e) => { modal.open = true; });
+```
+
+`composed: true` is required for custom events to cross Shadow DOM boundaries.
+This is a browser rule — FAST doesn't change it.
+
+**Event flow in this project:**
+- `metric-card` → no events (display only)
+- `service-status` → dispatches `service-selected` → `main.js` opens `app-modal`
+- `alert-item` → dispatches `alert-selected` → `main.js` opens `app-modal`
+- `app-modal` → dispatches `modal-closed` → `main.js` can listen
+- `main.js` → dispatches `show-toast` on `window` → `toast-container` hears it
+
+---
+
+### 6. JavaScript Quality (10%)
+
+**`attr()` used correctly throughout:**
+
+```js
+// Primitives that should be HTML attributes → attr()
+// (named "heading" not "title" — "title" is a reserved global HTML attribute
+// that triggers a native tooltip on hover)
+attr(MetricCard.prototype, "heading");
+attr(MetricCard.prototype, "value");
+
+// Boolean attribute → attr() only accepts (configOrTarget, prop) — there is no
+// 3-arg (target, prop, config) form, so config comes first and returns the
+// decorator function, which is then invoked manually with (target, prop)
+attr({ mode: "boolean" })(AppModal.prototype, "open");
+
+// Arrays/objects that cannot be HTML attributes → observable()
+observable(ServiceStatus.prototype, "services");
+observable(AlertList.prototype, "alerts");
+observable(ActivityTable.prototype, "activities");
+```
+
+**Tagged template literals used correctly:**
+- `html\`...\`` for all component templates with `${x => ...}` bindings
+- `css\`...\`` for all component styles
+
+**Key correctness rules followed:**
+- Always reassign observables, never mutate: `this.alerts = newArray` ✅
+- Always call `super.connectedCallback()` first when overriding lifecycle ✅
+- `composed: true` on all cross-boundary custom events ✅
+- Default values provided for all `attr()` declarations ✅
+
+---
+
+### 7. Accessibility / Responsiveness (5%)
+
+- All interactive elements have `aria-label` attributes
+- `role` attributes on all structural elements (`region`, `list`, `listitem`, `dialog`)
+  — `<activity-table>` uses a plain `<table>` rather than `role="grid"`, because this
+  component doesn't implement full arrow-key cell navigation; overclaiming `grid`
+  semantics without the keyboard behavior to back them up is worse than not claiming it
+- `aria-live` on dynamic regions (count badge, pagination, toast container)
+- `aria-pressed` on filter toggle buttons
+- `aria-sort` on activity-table's column headers, which are real `<button>`s —
+  sorting is reachable and operable from the keyboard, not just a mouse click
+- `aria-modal="true"` on modal dialog, plus focus management: opening the modal
+  moves focus to its close button, closing it returns focus to whatever triggered it
+- Keyboard navigation: all clickable items have `tabindex="0"` and `@keydown`
+  handlers for Enter/Space
+- Responsive layout via CSS Grid and `flex-wrap`
+- Dark mode via CSS custom properties on `body.dark`, persisted to `localStorage`
+  and seeded from `prefers-color-scheme` on first load
+
+---
+
+### 8. Testing / Documentation (5%)
+
+**SaaS Dashboard → FAST Mapping:**
+
+| Vanilla Web Component | FAST Equivalent | What Disappeared |
 |---|---|---|
-| Custom Elements / API knowledge | 20% | 9 components, all lifecycle methods, properties, attributes |
-| Shadow DOM / CSS encapsulation | 20% | All components use `attachShadow`, `:host`, encapsulated CSS |
-| Templates and Slots | 15% | All components use `<template>` and `cloneNode(true)`, named slots in shell and modal |
-| Component architecture / composition | 15% | `<app-shell>` composes all components, `<alert-list>` composes `<alert-item>` |
-| Events and component communication | 10% | Custom events with `bubbles` and `composed`, `window` broadcast for toasts |
-| JavaScript quality | 10% | Explicit, readable, well-commented, DRY `_render()` pattern throughout |
-| Accessibility / responsiveness | 5% | `aria-*` attributes, `role`, `tabindex`, keyboard events, CSS Grid with media queries |
-| Testing / documentation | 5% | This README, inline code comments, project documentation notes |
+| `class X extends HTMLElement` | `class X extends FASTElement` | `attachShadow`, template clone, binding setup |
+| `static get observedAttributes()` | `attr(X.prototype, "name")` part 1 | The static getter |
+| `attributeChangedCallback()` | `attr(X.prototype, "name")` part 2 | The callback method |
+| Property getter + setter | `attr(X.prototype, "name")` parts 3+4 | Both accessors |
+| `set services(data) { this._render(); }` | `observable(X.prototype, "services")` | Manual setter |
+| `querySelector + textContent` | `${x => x.heading}` binding | DOM search + write |
+| `_render()` method | Does not exist | Entire re-render function |
+| `createElement + setAttribute + appendChild` loop | `repeat(x => x.items, html\`...\`)` | Manual DOM loop |
+| `if/else innerHTML` | `when(x => condition, html\`...\`)` | Conditional DOM surgery |
+| `if (p===1) btn.setAttribute('disabled','')` | `?disabled="${x => x.page===1}"` | Manual attribute toggle |
+| `<style>` creation + `shadowRoot.appendChild` | `css\`...\`` | 3 boilerplate lines |
+| `customElements.define(name, X)` | Inside `X.define({ name, template, styles })` | Standalone call |
+| `connectedCallback` | Still exists — call `super` first | Nothing — still yours |
+| `dispatchEvent(new CustomEvent(...))` | Unchanged | Nothing |
+| `<slot>` | Unchanged | Nothing |
+| CSS custom properties | Unchanged | Nothing |
+| `:host` selector | Unchanged | Nothing |
 
 ---
 
-## Author
+## Key Concepts to Explain
 
-Ansley Diya
-VCC Engineering — Vonage
+### What does `@attr` / `attr()` compile down to?
+
+Without FAST you would write:
+
+```js
+static get observedAttributes() {
+  return ["heading", "value"];
+}
+attributeChangedCallback(name, oldVal, newVal) {
+  this._render();
+}
+get heading() { return this.getAttribute("heading"); }
+set heading(v) { this.setAttribute("heading", v); }
+```
+
+`attr(MetricCard.prototype, "heading")` generates all four of those automatically.
+Four vanilla steps. One FAST call.
+
+### Why does `attachShadow` only need to run once, even in `connectedCallback`?
+
+`connectedCallback` can run more than once per element — remove a component from
+the DOM and re-insert it, and it fires again. Calling `attachShadow` a second time
+throws (`Shadow root cannot be created on a host which already hosts a shadow tree`).
+`FASTElement`'s own controller creates the Shadow DOM exactly once, the first time
+the element connects, and reuses it on every later reconnect — so none of these
+nine components need `if (!this.shadowRoot) return` guards before touching the DOM,
+and setting a property before the element is connected still renders correctly once
+it does connect.
+
+### Why does `:host([open])` still work in `app-modal`?
+
+`:host([open])` is a CSS selector that asks the browser:
+"does the host element currently have an attribute called `open`?"
+
+`attr({ mode: "boolean" })` manages `setAttribute("open", "")` and
+`removeAttribute("open")` — the same calls the vanilla `openModal()` and
+`close()` methods made manually. The DOM attribute appears and disappears
+the same way. The CSS selector reads the real DOM attribute — it doesn't
+know or care that FAST set it.
+
+### Why must `composed: true` be set on custom events?
+
+Shadow DOM creates an encapsulation boundary. By default, events stop at that
+boundary — they do not bubble out of a component's Shadow DOM into the
+outer document. `composed: true` instructs the browser to let the event
+cross Shadow DOM boundaries. Without it, `main.js` never hears the event.
+This is a browser rule. FAST doesn't change it.
+
+### Why `super.connectedCallback()` first?
+
+`FASTElement` uses `connectedCallback` to hydrate the template and connect
+bindings. If you override `connectedCallback` and don't call `super` first,
+the template never renders and no bindings connect. Your code runs but has
+no DOM to work with. `super` first ensures FAST does its setup before yours.
+
+---
+
+## Running the Original for Comparison
+
+The original vanilla implementation is at:
+```
+../operations-dashboard-project/
+```
+
+Open both side by side. Every component produces identical visible output.
+Every `main.js` API call is identical. The only differences are inside the
+component files — that's the definition of a thin productivity layer.
+
+---
+
+## Tech Stack
+
+- [@microsoft/fast-element](https://www.fast.design/) v3
+- Native Web Components (Custom Elements, Shadow DOM, Slots)
+- Vanilla JavaScript (ES Modules)
+- CSS Custom Properties for theming
+- No build step required — pure ES modules
+

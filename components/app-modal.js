@@ -1,94 +1,196 @@
-import { FASTElement, observable, html, css } from "@microsoft/fast-element";
+// FASTElement → base class (replaces HTMLElement + attachShadow + template clone boilerplate)
+// attr         → makes an HTML attribute reactive (here: a BOOLEAN attribute, see attr({mode:"boolean"}) below)
+// html / css   → tagged template literals for this component's Shadow DOM markup + styles
+import { FASTElement, attr, html, css } from "@microsoft/fast-element";
 
+// x here = the AppModal component instance — no repeat() in this file, one modal for the whole page
 const template = html`
-  <div class="header" role="banner">
-    <div class="header-left">
-      <div class="header-logo" aria-hidden="true">D</div>
-      <div>
-        <div class="header-title">Operations Dashboard</div>
-        <div class="header-subtitle">Platform Monitor</div>
+  <!-- @click on backdrop → close when clicking outside the modal box -->
+  <div
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    @click="${(x, c) => x.handleBackdropClick(c.event)}"
+  >
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <span id="modal-title" class="modal-title">
+          <!-- named slot — browser projects <span slot="title"> from light DOM here
+               FAST does not touch this. The browser does all projection.              -->
+          <slot name="title">Details</slot>
+        </span>
+
+        <!-- @click → x.closeModal() — replaces querySelector('.close-btn') + addEventListener -->
+        <button
+          class="modal-close"
+          @click="${x => x.closeModal()}"
+          aria-label="Close modal"
+        >✕</button>
       </div>
-    </div>
-    <div class="header-right">
-      <div class="status-pill" role="status" aria-live="polite">
-        <div class="status-dot-live" aria-hidden="true"></div>
-        Live
+
+      <div class="modal-body">
+        <!-- named slot — browser projects <div slot="content"> from light DOM here -->
+        <slot name="content"></slot>
       </div>
-      <button
-        class="theme-toggle"
-        @click="${x => x.toggleTheme()}"
-        aria-label="${x => x.isDark ? 'Switch to light mode' : 'Switch to dark mode'}"
-      >
-        ${x => x.isDark ? "Light Mode" : "Dark Mode"}
-      </button>
+
     </div>
-  </div>
-  <div class="main" role="main">
-    <slot name="content"></slot>
   </div>
 `;
 
 const styles = css`
-  :host { display: block; }
-  .header {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d1b69 60%, #1a1a1a 100%);
-    color: white;
-    padding: 0 32px;
-    height: 68px;
+  :host {
+    display: none; /* hidden by default — :host([open]) overrides this */
+  }
+
+  /* :host([open]) — when the 'open' attribute exists on <app-modal>
+     This is pure CSS + browser DOM attribute query — unchanged from vanilla
+     attr({ mode:'boolean' }) manages setAttribute/removeAttribute
+     The CSS selector reads the real DOM attribute — it doesn't know FAST exists */
+  :host([open]) {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-box {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 540px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--color-border);
+    position: relative;
+  }
+
+  .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 4px 24px rgba(124, 58, 237, 0.3);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
   }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .header-logo {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 800; color: white;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
-    letter-spacing: -0.5px;
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
   }
-  .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; color: white; }
-  .header-subtitle { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .status-pill {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-    padding: 5px 12px; border-radius: 20px;
-    font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500;
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    line-height: 1;
   }
-  .status-dot-live {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #22c55e; box-shadow: 0 0 6px #22c55e;
-    animation: pulse 2s infinite;
+
+  .modal-close:hover {
+    background: var(--color-hover);
+    color: var(--color-text);
   }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .theme-toggle {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-    color: white; padding: 7px 16px; border-radius: 20px;
-    cursor: pointer; font-size: 12px; font-weight: 600;
-    transition: all 0.2s ease; letter-spacing: 0.3px;
-  }
-  .theme-toggle:hover { background: rgba(124,58,237,0.4); border-color: rgba(124,58,237,0.6); }
-  .main { padding: 16px; }
+
+  .modal-body { color: var(--color-text); font-size: 14px; line-height: 1.6; }
 `;
 
-class AppShell extends FASTElement {}
+class AppModal extends FASTElement {
 
-observable(AppShell.prototype, "isDark");
+  // connectedCallback — still exists in FAST, still yours to use
+  // MUST call super.connectedCallback() first
+  // FAST hydrates the template and connects all bindings inside super()
+  // Your code runs after — safe to add your own listeners here
+  connectedCallback() {
+    super.connectedCallback(); // FAST does its work first
+    this._onKeyDown = (e) => {
+      if (e.key === "Escape" && this.open) this.closeModal();
+    };
+    document.addEventListener("keydown", this._onKeyDown);
+  }
 
-AppShell.prototype.toggleTheme = function() {
-  this.isDark = !this.isDark;
-  document.body.classList.toggle("dark", this.isDark);
-};
+  // disconnectedCallback — same rule: call super first
+  // FAST disconnects bindings and cleans up inside super()
+  // Then you remove your own listeners
+  disconnectedCallback() {
+    super.disconnectedCallback(); // FAST cleans up first
+    document.removeEventListener("keydown", this._onKeyDown);
+  }
 
-AppShell.define({
-  name: "app-shell",
+  // closeModal — sets this.open = false
+  // attr({ mode:'boolean' }) setter → calls removeAttribute('open')
+  // :host([open]) CSS rule no longer matches → display: none
+  // dispatchEvent — completely unchanged from vanilla
+  // guard: if the modal is already closed, do nothing — otherwise any Escape press
+  // anywhere on the page (even with the modal shut) would broadcast a spurious event
+  closeModal() {
+    if (!this.open) return;
+    this.open = false;
+    this.dispatchEvent(new CustomEvent("modal-closed", {
+      bubbles:  true,
+      composed: true,
+    }));
+  }
+
+  // handleBackdropClick — close only if clicking the backdrop itself
+  // not the modal-box inside it (same logic as your vanilla version)
+  handleBackdropClick(e) {
+    if (e.target === e.currentTarget) this.closeModal();
+  }
+
+  // openChanged — attr() calls this automatically whenever "open" changes, because
+  // its name follows the "<propertyName>Changed" convention FAST looks for.
+  // Manages focus the way an accessible dialog should: move focus INTO the modal
+  // when it opens, and give it back to whatever triggered the modal when it closes —
+  // otherwise a keyboard/screen-reader user stays "behind" the modal the whole time.
+  openChanged(oldValue, newValue) {
+    if (newValue) {
+      this._previouslyFocused = document.activeElement;
+      // wait a frame — the modal only just became visible (display: flex), so it
+      // isn't focusable yet on this exact tick
+      requestAnimationFrame(() => {
+        const closeButton = this.shadowRoot.querySelector(".modal-close");
+        if (closeButton) closeButton.focus();
+      });
+    } else if (this._previouslyFocused && document.contains(this._previouslyFocused)) {
+      this._previouslyFocused.focus();
+      this._previouslyFocused = null;
+    }
+  }
+}
+
+// attr with mode: "boolean"
+// this.open = true  → setAttribute('open', '')   → :host([open]) matches → display:flex
+// this.open = false → removeAttribute('open')    → :host([open]) unmatches → display:none
+// main.js can still call: modal.open = true  (property)
+// or:                      modal.setAttribute('open', '') (attribute)
+// Both work identically — attr() keeps them in sync
+// NOTE: attr(target, prop, options) silently drops "options" — attr() only accepts
+// (configOrTarget, prop). To pass a config in this no-decorator style, call
+// attr(config) to get the decorator function back, then invoke it with (target, prop).
+attr({ mode: "boolean" })(AppModal.prototype, "open");
+
+AppModal.define({
+  name: "app-modal",
   template,
   styles,
 });

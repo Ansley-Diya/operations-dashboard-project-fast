@@ -1,125 +1,154 @@
-// Helper — dispatches a show-toast event on window
-// Any component anywhere can call this
-function showToast(message, type = 'info') {
-  window.dispatchEvent(new CustomEvent('show-toast', {
-    detail: { message, type }
-  }));
+// main.js is the only file that knows the data/*.json files exist.
+// Every component only ever receives data through attributes/properties or
+// reacts to events — none of them know or care where the data came from.
+// That's the loose coupling the README describes: components stay reusable.
+
+// escapeHtml — the modal's content below is built with template-literal strings
+// assigned to .innerHTML. That's fine for our own local trusted JSON today, but the
+// moment any of these values came from a remote API instead, an unescaped "<" or """
+// in a name/message would let it inject markup into the page (a stored-XSS hole).
+// Escaping every interpolated value here costs nothing and closes that hole for good.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
 }
 
-// Helper — escapes HTML to prevent XSS
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+document.addEventListener("DOMContentLoaded", async () => {
 
-// Get a reference to the modal
-const modal = document.querySelector('app-modal');
+  const modal = document.querySelector("app-modal");
 
-// Listen for a service row being clicked
-document.addEventListener('service-selected', (event) => {
-  const service = event.detail;
+  // ── EVENT LISTENERS ─────────────────────────────────────────────────────────
+  // Registered up front, before any data has loaded. These don't depend on the
+  // fetch below succeeding — a failed fetch below must not leave the page unable
+  // to respond to a service/alert click on a future successful reload.
 
-  // Fill modal slots with the selected service's data (escaped)
-  modal.innerHTML = `
-    <span slot="title">${escapeHtml(service.name)}</span>
-    <div slot="content">
-      <p><strong>Status:</strong> ${escapeHtml(service.status)}</p>
-      <p><strong>Uptime:</strong> ${escapeHtml(String(service.uptime))}%</p>
-      <p><strong>Response Time:</strong> ${escapeHtml(String(service.responseTimeMs))}ms</p>
-      <p><strong>Description:</strong> ${escapeHtml(service.description)}</p>
-    </div>
-  `;
+  // serviceNameById is filled in once the data loads below; alert.service is a raw
+  // id like "auth" — this map lets the modal show the friendly name instead.
+  // Declared here (not inside the try) so the alert-selected handler can always
+  // safely refer to it, even before the data has loaded.
+  let serviceNameById = new Map();
 
-  modal.openModal();
-  showToast(`Viewing ${service.name}`, 'info');
-});
+  // service-selected — dispatched by <service-status> when a row is clicked/Enter'd
+  document.addEventListener("service-selected", (e) => {
+    if (!modal) return;
+    const s = e.detail.service;
+    modal.innerHTML = `
+      <span slot="title">${escapeHtml(s.name)}</span>
+      <div slot="content">
+        <p><strong>Status:</strong> ${escapeHtml(s.status)}</p>
+        <p><strong>Uptime:</strong> ${escapeHtml(s.uptime)}%</p>
+        <p><strong>Response time:</strong> ${escapeHtml(s.responseTimeMs)}ms</p>
+      </div>
+    `;
+    modal.open = true;
+  });
 
-// Listen for an alert row being clicked
-document.addEventListener('alert-selected', (event) => {
-  const alert = event.detail;
+  // alert-selected — dispatched by <alert-item> when a row is clicked/Enter'd
+  document.addEventListener("alert-selected", (e) => {
+    if (!modal) return;
+    const a = e.detail;
+    const serviceName = serviceNameById.get(a.service) || a.service;
+    modal.innerHTML = `
+      <span slot="title">${escapeHtml((a.severity || "").toUpperCase())} — ${escapeHtml(a.title)}</span>
+      <div slot="content">
+        <p><strong>Service:</strong>  ${escapeHtml(serviceName)}</p>
+        <p><strong>Status:</strong>   ${escapeHtml(a.status)}</p>
+        <p><strong>Time:</strong>     ${escapeHtml(a.timestamp)}</p>
+        ${a.message ? `<p>${escapeHtml(a.message)}</p>` : ""}
+      </div>
+    `;
+    modal.open = true;
+  });
 
-  // Fill modal slots with the selected alert's data (escaped)
-  modal.innerHTML = `
-    <span slot="title">${escapeHtml(alert.title)}</span>
-    <div slot="content">
-      <p><strong>Severity:</strong> ${escapeHtml(alert.severity)}</p>
-      <p><strong>Service:</strong> ${escapeHtml(alert.service)}</p>
-      <p><strong>Status:</strong> ${escapeHtml(alert.status)}</p>
-      <p><strong>Message:</strong> ${escapeHtml(alert.message || '')}</p>
-    </div>
-  `;
-
-  modal.openModal();
-  showToast(`Viewing alert: ${alert.title}`, 'info');
-});
-
-// Loads all data and passes it to the components
-async function loadDashboard() {
+  // ── DATA LOADING ─────────────────────────────────────────────────────────────
+  // Wrapped in try/catch so a failed fetch shows an error toast instead of leaving
+  // an unhandled promise rejection and a half-built page with no explanation.
   try {
 
-    // Fetch all three data files simultaneously
+    // fetch() only rejects on a network failure — a 404/500 still resolves
+    // successfully, so each response's .ok must be checked before parsing JSON
     const [servicesResponse, alertsResponse, activityResponse] = await Promise.all([
-      fetch('data/services.json'),
-      fetch('data/alerts.json'),
-      fetch('data/activity.json')
+      fetch("./data/services.json"),
+      fetch("./data/alerts.json"),
+      fetch("./data/activity.json"),
     ]);
+    if (!servicesResponse.ok) throw new Error("Failed to load services.json");
+    if (!alertsResponse.ok)   throw new Error("Failed to load alerts.json");
+    if (!activityResponse.ok) throw new Error("Failed to load activity.json");
 
-    // Check each response is valid before parsing
-    if (!servicesResponse.ok) throw new Error('Failed to load services.json');
-    if (!alertsResponse.ok)   throw new Error('Failed to load alerts.json');
-    if (!activityResponse.ok) throw new Error('Failed to load activity.json');
+    const services   = await servicesResponse.json();
+    const alerts     = await alertsResponse.json();
+    const activities = await activityResponse.json();
 
-    // Parse JSON responses into JavaScript objects
-    const services = await servicesResponse.json();
-    const alerts   = await alertsResponse.json();
-    const activity = await activityResponse.json();
+    // fill in the lookup the alert-selected listener above already captured by reference
+    serviceNameById = new Map(services.map(s => [s.id, s.name]));
 
-    // Build a lookup map from service ID to service name
-    const serviceNameMap = {};
-    services.forEach(s => { serviceNameMap[s.id] = s.name; });
+    // ── METRIC CARDS ──────────────────────────────────────────────────────────
+    // computed from services/alerts — matches the original vanilla dashboard
+    const avgResponseMs = Math.round(
+      services.reduce((sum, s) => sum + s.responseTimeMs, 0) / services.length
+    );
+    const cards = document.querySelectorAll("metric-card");
+    const metricData = [
+      { heading: "Services Online",    value: `${services.filter(s => s.status === "operational").length} / ${services.length}` },
+      { heading: "Active Alerts",      value: String(alerts.filter(a => a.status === "open").length) },
+      { heading: "Avg. Response Time", value: `${avgResponseMs} ms` },
+    ];
+    metricData.forEach((metric, i) => {
+      if (cards[i]) {
+        // "heading" not "title" — <metric-card> avoids the reserved title attribute
+        cards[i].setAttribute("heading", metric.heading);
+        cards[i].setAttribute("value", metric.value);
+      }
+    });
 
-    // Enrich alerts with service names
-    const enrichedAlerts = alerts.map(a => ({
+    // ── SERVICE STATUS ───────────────────────────────────────────────────────
+    // property setter (not setAttribute) — services is an array, and HTML attributes
+    // can only ever be strings, so array/object data must go through a JS property
+    const serviceStatus = document.querySelector("service-status");
+    if (serviceStatus) {
+      serviceStatus.services = services;
+    }
+
+    // ── ALERT LIST ───────────────────────────────────────────────────────────
+    // augment each alert with the service's friendly name up front, so
+    // <alert-item> can just display it — no lookup logic inside the component
+    const alertsWithServiceNames = alerts.map(a => ({
       ...a,
-      service: serviceNameMap[a.service] || a.service
+      serviceName: serviceNameById.get(a.service) || a.service,
     }));
+    const alertList = document.querySelector("alert-list");
+    if (alertList) {
+      alertList.alerts        = alertsWithServiceNames;
+      alertList.currentFilter = "all";
+    }
 
-    // Calculate average response time across all services
-    const totalMs = services.reduce((sum, s) => sum + s.responseTimeMs, 0);
-    const avgMs   = Math.round(totalMs / services.length);
+    // ── ACTIVITY TABLE ───────────────────────────────────────────────────────
+    const activityTable = document.querySelector("activity-table");
+    if (activityTable) {
+      activityTable.activities = activities;
+    }
 
-    // Pass data to the three metric cards via attributes
-    const cards = document.querySelectorAll('metric-card');
-    cards[0].setAttribute('heading', 'Services Online');
-    cards[0].setAttribute('value', `${services.filter(s => s.status === 'operational').length} / ${services.length}`);
-
-    cards[1].setAttribute('heading', 'Active Alerts');
-    cards[1].setAttribute('value', alerts.filter(a => a.status === 'open').length);
-
-    cards[2].setAttribute('heading', 'Avg. Response Time');
-    cards[2].setAttribute('value', `${avgMs} ms`);
-
-    // Pass data to service-status via property setter
-    const serviceStatus = document.querySelector('service-status');
-    serviceStatus.services = services;
-
-    // Pass data to alert-list via property setter
-    const alertList = document.querySelector('alert-list');
-    alertList.alerts = enrichedAlerts;
-
-    // Pass data to activity-table via property setter
-    const activityTable = document.querySelector('activity-table');
-    activityTable.activities = activity;
-
-    // Notify the user that data loaded successfully
-    showToast('Dashboard data loaded successfully', 'success');
+    // ── TOAST DEMO ───────────────────────────────────────────────────────────
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("show-toast", {
+        detail: { message: "Dashboard loaded successfully", type: "success" }
+      }));
+    }, 800);
 
   } catch (error) {
-    // If anything fails, log it and show an error toast
-    console.error('Dashboard failed to load:', error.message);
-    showToast(`Failed to load dashboard: ${error.message}`, 'error');
+    // logged for developers, toasted for the user — same two-part error handling
+    // pattern the original vanilla main.js uses
+    console.error("Dashboard failed to load:", error.message);
+    window.dispatchEvent(new CustomEvent("show-toast", {
+      detail: { message: `Failed to load dashboard: ${error.message}`, type: "error" }
+    }));
   }
-}
 
-loadDashboard();
+});
+

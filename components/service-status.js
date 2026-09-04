@@ -32,26 +32,24 @@ const template = html`
       -->
       ${repeat(x => x.services, html`
 
+        <!-- x here = individual service object (NOT the component) -->
+        <!-- e.g. x.name = "Auth API", x.status = "operational" -->
+
+        <!--
+          @click event binding: replaces addEventListener("click", ...)
+          (x, c) gives two things:
+            x        → the individual service object
+            c.parent → the component instance (ServiceStatus)
+          calling c.parent.handleServiceClick(x) passes the service to the component method
+          same (x, c) pattern for keyboard accessibility on @keydown
+        -->
         <div
           class="service-item"
           role="listitem"
           tabindex="0"
-
-          <!-- x here = individual service object (NOT the component) -->
-          <!-- e.g. x.name = "Auth API", x.status = "operational" -->
           aria-label="${x => `${x.name}: ${x.status}`}"
-
-          <!--
-            @click event binding: replaces addEventListener("click", ...)
-            (x, c) gives two things:
-              x        → the individual service object
-              c.parent → the component instance (ServiceStatus)
-            calling c.parent.handleServiceClick(x) passes the service to the component method
-          -->
           @click="${(x, c) => c.parent.handleServiceClick(x)}"
-
-          <!-- same (x, c) pattern for keyboard accessibility -->
-          @keydown="${(x, c) => c.parent.handleKeyDown(x, event)}"
+          @keydown="${(x, c) => c.parent.handleKeyDown(x, c.event)}"
         >
           <!-- "status-dot ${x => x.status}" → renders as "status-dot operational" etc -->
           <!-- matches your CSS: .status-dot.operational { background: #22c55e } -->

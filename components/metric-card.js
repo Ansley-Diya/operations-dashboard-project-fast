@@ -1,12 +1,19 @@
+// FASTElement → base class (replaces HTMLElement + attachShadow + template clone boilerplate)
+// attr         → makes an HTML attribute reactive (replaces observedAttributes + attributeChangedCallback + getter/setter)
+// html         → tagged template literal for the component's Shadow DOM markup, with live ${x => ...} bindings
+// css          → tagged template literal for the component's Shadow DOM styles
 import { FASTElement, attr, html, css } from "@microsoft/fast-element";
 
+// x here = the MetricCard component instance (not a list item — this component has no repeat())
+// NOTE: the attribute is called "heading", not "title" — "title" is a reserved global HTML attribute
+// that makes the browser show a native tooltip on hover, which fights with our own aria-label.
 const template = html`
   <div
     class="metric-card"
     role="region"
-    aria-label="${x => `${x.title || ''}: ${x.value || '-'}`}"
+    aria-label="${x => `${x.heading || ''}: ${x.value || '-'}`}"
   >
-    <div class="card-label">${x => x.title}</div>
+    <div class="card-label">${x => x.heading}</div>
     <div class="card-value">${x => x.value || '-'}</div>
   </div>
 `;
@@ -59,11 +66,17 @@ const styles = css`
   }
 `;
 
+// No constructor, no methods — this component only ever displays data it's given.
 class MetricCard extends FASTElement {}
 
-attr(MetricCard.prototype, "title");
+// attr() installs a real getter/setter pair on the prototype for each HTML attribute below.
+// main.js sets these with cards[i].setAttribute("heading", ...) / setAttribute("value", ...) —
+// attr() keeps the attribute and the JS property in sync automatically in both directions.
+attr(MetricCard.prototype, "heading");
 attr(MetricCard.prototype, "value");
 
+// define() registers the template + styles + attrs, then calls the real
+// customElements.define("metric-card", MetricCard) — the native browser API.
 MetricCard.define({
   name: "metric-card",
   template,

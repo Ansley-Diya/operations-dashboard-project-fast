@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Operations Dashboard — FAST</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- ─── IMPORTMAP ──────────────────────────────────────────────────────────
+       The browser cannot find node_modules on its own.
+       An importmap tells the browser: "when you see this import name,
+       look at this actual file path instead."
+       This is the only change needed to make Live Server work with npm packages.
+       No bundler. No build step. Just this one block.                          -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@microsoft/fast-element": "/node_modules/@microsoft/fast-element/dist/esm/index.js",
+        "@microsoft/fast-element/": "/node_modules/@microsoft/fast-element/"
+      }
+    }
+  </script>
+
 </head>
 <body>
 
@@ -22,6 +38,7 @@
   <app-modal></app-modal>
   <toast-container></toast-container>
 
+  <!-- type="module" is required — enables import statements in the browser -->
   <script type="module" src="components/metric-card.js"></script>
   <script type="module" src="components/app-shell.js"></script>
   <script type="module" src="components/service-status.js"></script>
@@ -35,4 +52,3 @@
 
 </body>
 </html>
-

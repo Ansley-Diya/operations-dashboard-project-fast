@@ -1,5 +1,11 @@
+// FASTElement → base class (replaces HTMLElement + attachShadow + template clone boilerplate)
+// observable   → makes a plain JS property reactive (not an HTML attribute — isDark never
+//                needs to be set from outside as a string, so attr() isn't the right tool here)
+// html / css   → tagged template literals for this component's Shadow DOM markup + styles
 import { FASTElement, observable, html, css } from "@microsoft/fast-element";
 
+// x here = the AppShell component instance — this template has no repeat(), so there's
+// only ever one "x" in scope: the component itself
 const template = html`
   <div class="header" role="banner">
     <div class="header-left">
@@ -14,6 +20,8 @@ const template = html`
         <div class="status-dot-live" aria-hidden="true"></div>
         Live
       </div>
+      <!-- @click calls toggleTheme() below; aria-label + button text both flip with isDark
+           so the accessible name always matches what the button is about to do -->
       <button
         class="theme-toggle"
         @click="${x => x.toggleTheme()}"
@@ -23,6 +31,8 @@ const template = html`
       </button>
     </div>
   </div>
+  <!-- named slot — main.js/index.html puts <div slot="content"> here; the browser
+       projects it into this exact spot, FAST is not involved in slot projection -->
   <div class="main" role="main">
     <slot name="content"></slot>
   </div>
@@ -78,15 +88,42 @@ const styles = css`
   .main { padding: 16px; }
 `;
 
-class AppShell extends FASTElement {}
+class AppShell extends FASTElement {
 
+  // Gotcha: never default an observable/attr property with class-field syntax
+  // (e.g. "isDark = false;") — it shadows the accessor observable() installs below.
+  // A real assignment inside an explicit constructor goes through the setter instead.
+  constructor() {
+    super();
+    // seed the theme from a saved choice; if the user has never toggled it,
+    // fall back to their OS-level light/dark preference instead of always light
+    const saved = localStorage.getItem("theme");
+    this.isDark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  // body is outside this component's Shadow DOM, so its class can't be set via a
+  // template binding — apply the seeded theme here as soon as the element connects
+  connectedCallback() {
+    super.connectedCallback();
+    document.body.classList.toggle("dark", this.isDark);
+  }
+
+  // toggleTheme — called by the header button's @click binding
+  // flips isDark, mirrors it onto <body class="dark"> (styles.css reads that class),
+  // and persists the choice so it survives a page reload
+  toggleTheme() {
+    this.isDark = !this.isDark;
+    document.body.classList.toggle("dark", this.isDark);
+    localStorage.setItem("theme", this.isDark ? "dark" : "light");
+  }
+}
+
+// observable() replaces manually calling _render() from a custom setter — when
+// toggleTheme() assigns this.isDark, FAST re-runs the two ${x => x.isDark ...} bindings
 observable(AppShell.prototype, "isDark");
 
-AppShell.prototype.toggleTheme = function() {
-  this.isDark = !this.isDark;
-  document.body.classList.toggle("dark", this.isDark);
-};
-
+// define() registers the template + styles, then calls the native
+// customElements.define("app-shell", AppShell)
 AppShell.define({
   name: "app-shell",
   template,
