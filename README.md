@@ -391,7 +391,7 @@ no DOM to work with. `super` first ensures FAST does its setup before yours.
 
 The original vanilla implementation is at:
 ```
-[../operations-dashboard-project/](https://ansley-diya.github.io/operations-dashboard-project/)
+https://ansley-diya.github.io/operations-dashboard-project
 ```
 
 Open both side by side. Every component produces identical visible output.
