@@ -284,7 +284,7 @@ observable(ActivityTable.prototype, "activities");
 ### 7. Accessibility / Responsiveness (5%)
 
 - All interactive elements have `aria-label` attributes
-- `role` attributes on all structural elements (`region`, `list`, `listitem`, `dialog`)
+- `role` attributes on all structural elements (`region`, `list`, `button`, `dialog`)
   — `<activity-table>` uses a plain `<table>` rather than `role="grid"`, because this
   component doesn't implement full arrow-key cell navigation; overclaiming `grid`
   semantics without the keyboard behavior to back them up is worse than not claiming it
@@ -292,10 +292,11 @@ observable(ActivityTable.prototype, "activities");
 - `aria-pressed` on filter toggle buttons
 - `aria-sort` on activity-table's column headers, which are real `<button>`s —
   sorting is reachable and operable from the keyboard, not just a mouse click
-- `aria-modal="true"` on modal dialog, plus focus management: opening the modal
-  moves focus to its close button, closing it returns focus to whatever triggered it
-- Keyboard navigation: all clickable items have `tabindex="0"` and `@keydown`
-  handlers for Enter/Space
+- `aria-modal="true"` on the modal dialog, plus focus management: opening the modal
+  moves focus to its close button, traps Tab within the dialog, and closing it returns
+  focus to whatever triggered it
+- Keyboard navigation: all clickable items have `role="button"`, `tabindex="0"`, and
+  `@keydown` handlers for Enter/Space
 - Responsive layout via CSS Grid and `flex-wrap`
 - Dark mode via CSS custom properties on `body.dark`, persisted to `localStorage`
   and seeded from `prefers-color-scheme` on first load
@@ -353,8 +354,9 @@ Four vanilla steps. One FAST call.
 `connectedCallback` can run more than once per element — remove a component from
 the DOM and re-insert it, and it fires again. Calling `attachShadow` a second time
 throws (`Shadow root cannot be created on a host which already hosts a shadow tree`).
-`FASTElement`'s own controller creates the Shadow DOM exactly once, the first time
-the element connects, and reuses it on every later reconnect — so none of these
+`FASTElement`'s constructor creates the Shadow DOM exactly once and its controller
+hydrates the template when the element connects, then reuses it on every later
+reconnect — so none of these
 nine components need `if (!this.shadowRoot) return` guards before touching the DOM,
 and setting a property before the element is connected still renders correctly once
 it does connect.
