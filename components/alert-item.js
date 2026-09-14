@@ -10,7 +10,7 @@ import { FASTElement, attr, html, css } from "@microsoft/fast-element";
 const template = html`
   <div
     class="alert-item"
-    role="listitem"
+    role="button"
     tabindex="0"
     aria-label="${x => `${x.severity || "info"} alert: ${x.heading || ""}`}"
     @click="${x => x.handleClick()}"

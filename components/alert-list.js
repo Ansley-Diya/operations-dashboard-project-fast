@@ -169,14 +169,20 @@ const styles = css`
 // ─── CLASS ────────────────────────────────────────────────────────────────────
 class AlertList extends FASTElement {
 
+  constructor() {
+    super();
+    this.currentFilter = "all";
+  }
+
   // COMPUTED GETTER — replaces the filtering logic inside your vanilla _render()
   // Called by repeat(x => x.filteredAlerts, ...) and when(x => x.filteredAlerts.length === 0, ...)
   // When alerts or currentFilter changes → FAST re-calls this getter automatically
   // No need to call it manually — the bindings call it for you
   get filteredAlerts() {
-    if (!this.alerts) return [];
-    if (this.currentFilter === "all") return this.alerts;
-    return this.alerts.filter(a => a.severity === this.currentFilter);
+    const { alerts, currentFilter } = this;
+    if (!alerts) return [];
+    if (currentFilter === "all") return alerts;
+    return alerts.filter(a => a.severity === currentFilter);
   }
 
   // setFilter — called by @click bindings on the filter buttons

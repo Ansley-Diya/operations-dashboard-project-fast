@@ -83,8 +83,10 @@ const template = html`
                 <!-- initials from EVERY word in the name ("Maya Chen" → "MC"), not just the
                      first letter of the whole string — filter(Boolean) drops empty pieces
                      from a stray double space so p[0] is never called on undefined         -->
-                <div class="user-avatar">${x => (x.user || "").trim().split(/\s+/).filter(Boolean).map(p => p[0].toUpperCase()).join("") || "?"}</div>
-                <span>${x => x.user}</span>
+                <div class="user-cell">
+                  <div class="user-avatar">${x => (x.user || "").trim().split(/\s+/).filter(Boolean).map(p => p[0].toUpperCase()).join("") || "?"}</div>
+                  <span>${x => x.user}</span>
+                </div>
               </td>
               <td>${x => x.action}</td>
               <td class="td-resource">${x => x.resource}</td>
@@ -233,6 +235,10 @@ const styles = css`
   .table-row:last-child td { border-bottom: none; }
 
   .td-user {
+    vertical-align: middle;
+  }
+
+  .user-cell {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -352,11 +358,12 @@ class ActivityTable extends FASTElement {
   // Re-called automatically when any of the 4 observables change
   // filteredAndSorted — search + sort, WITHOUT pagination (source for counts and slicing)
   get filteredAndSorted() {
-    let rows = this.activities || [];
+    const { activities, searchQuery, sortField, sortDir } = this;
+    let rows = activities || [];
 
     // search — matches user, action, resource AND status, same as original _render()
-    if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       rows = rows.filter(r =>
         (r.user     || "").toLowerCase().includes(q) ||
         (r.action   || "").toLowerCase().includes(q) ||
@@ -366,11 +373,11 @@ class ActivityTable extends FASTElement {
     }
 
     // sort — only once a column has been clicked; original has no default sort column
-    if (this.sortField) {
+    if (sortField) {
       rows = [...rows].sort((a, b) => {
-        const av = (a[this.sortField] || "").toString().toLowerCase();
-        const bv = (b[this.sortField] || "").toString().toLowerCase();
-        return this.sortDir === "asc"
+        const av = (a[sortField] || "").toString().toLowerCase();
+        const bv = (b[sortField] || "").toString().toLowerCase();
+        return sortDir === "asc"
           ? av.localeCompare(bv)
           : bv.localeCompare(av);
       });
@@ -407,15 +414,17 @@ class ActivityTable extends FASTElement {
 
   // getSortLabel — "Label" when unsorted, "Label asc"/"Label desc" when sorted (matches original header text)
   getSortLabel(field, label) {
-    if (this.sortField !== field) return label;
-    return `${label} ${this.sortDir}`;
+    const { sortField, sortDir } = this;
+    if (sortField !== field) return label;
+    return `${label} ${sortDir}`;
   }
 
   // getAriaSort — value for the <th>'s aria-sort attribute, so screen readers announce
   // which column/direction is active (visual users get the same info from .sorted's color)
   getAriaSort(field) {
-    if (this.sortField !== field) return "none";
-    return this.sortDir === "asc" ? "ascending" : "descending";
+    const { sortField, sortDir } = this;
+    if (sortField !== field) return "none";
+    return sortDir === "asc" ? "ascending" : "descending";
   }
 
   // handleSearch — called by @input binding
