@@ -8,12 +8,9 @@ const template = html`
   <!-- @click on backdrop → close when clicking outside the modal box -->
   <div
     class="modal-backdrop"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-title"
     @click="${(x, c) => x.handleBackdropClick(c.event)}"
   >
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
 
       <div class="modal-header">
         <span id="modal-title" class="modal-title">
@@ -124,6 +121,7 @@ class AppModal extends FASTElement {
     super.connectedCallback(); // FAST does its work first
     this._onKeyDown = (e) => {
       if (e.key === "Escape" && this.open) this.closeModal();
+      if (e.key === "Tab" && this.open) this.handleTabKey(e);
     };
     document.addEventListener("keydown", this._onKeyDown);
   }
@@ -157,6 +155,24 @@ class AppModal extends FASTElement {
     if (e.target === e.currentTarget) this.closeModal();
   }
 
+  handleTabKey(e) {
+    const focusable = [...this.shadowRoot.querySelectorAll(
+      '.modal-box button, .modal-box [href], .modal-box input, .modal-box select, .modal-box textarea, .modal-box [tabindex]:not([tabindex="-1"])'
+    )].filter(element => !element.disabled && element.offsetParent !== null);
+    if (focusable.length === 0) return;
+
+    const current = this.shadowRoot.activeElement;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && current === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && current === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   // openChanged — attr() calls this automatically whenever "open" changes, because
   // its name follows the "<propertyName>Changed" convention FAST looks for.
   // Manages focus the way an accessible dialog should: move focus INTO the modal
@@ -165,6 +181,8 @@ class AppModal extends FASTElement {
   openChanged(oldValue, newValue) {
     if (newValue) {
       this._previouslyFocused = document.activeElement;
+      this._previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
       // wait a frame — the modal only just became visible (display: flex), so it
       // isn't focusable yet on this exact tick
       requestAnimationFrame(() => {
@@ -172,8 +190,11 @@ class AppModal extends FASTElement {
         if (closeButton) closeButton.focus();
       });
     } else if (this._previouslyFocused && document.contains(this._previouslyFocused)) {
+      document.body.style.overflow = this._previousBodyOverflow || "";
       this._previouslyFocused.focus();
       this._previouslyFocused = null;
+    } else {
+      document.body.style.overflow = this._previousBodyOverflow || "";
     }
   }
 }

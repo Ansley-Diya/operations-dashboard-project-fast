@@ -45,7 +45,7 @@ const template = html`
         -->
         <div
           class="service-item"
-          role="listitem"
+          role="button"
           tabindex="0"
           aria-label="${x => `${x.name}: ${x.status}`}"
           @click="${(x, c) => c.parent.handleServiceClick(x)}"

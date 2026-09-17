@@ -4,8 +4,8 @@
   "description": "Operations Dashboard — FAST Framework implementation using @microsoft/fast-element. A parallel refactor of the vanilla Web Components SaaS Dashboard project.",
   "type": "module",
   "scripts": {
-    "start": "npx serve . --listen 3000",
-    "dev": "npx live-server --port=3000"
+    "start": "serve . --listen 3000",
+    "dev": "live-server --port=3000"
   },
   "dependencies": {
     "@microsoft/fast-element": "^3.0.0"
@@ -18,5 +18,9 @@
     "microsoft"
   ],
   "author": "Ansley Diya",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.4"
+  }
 }
